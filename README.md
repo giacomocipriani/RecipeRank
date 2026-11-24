@@ -64,7 +64,7 @@ The dataset CSVs are excluded from Git and are not included in new commits after
 | `TextBlob` | Sentiment analysis in the EDA notebook |
 | `Jupyter` | Running the EDA notebook interactively |
 
-The app dependencies are listed in [`requirements.txt`](requirements.txt). At present, that file includes Streamlit and the libraries used by the app, but not `textblob` or Jupyter. Install the latter separately to run the notebook, or add them to `requirements.txt` if you want one environment for both workflows.
+The app dependencies are listed in [`requirements.txt`](requirements.txt). 
 
 ## Setup
 
