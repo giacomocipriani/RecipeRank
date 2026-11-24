@@ -40,6 +40,8 @@ CATEGORY_STICKERS = {
     "Dessert": "🍰",
 }
 
+PODIUM_MEDALS = {1: "🥇", 2: "🥈", 3: "🥉"}
+
 
 @st.cache_data(show_spinner="Loading and analyzing the CSV files…")
 def prepare_rankings(
@@ -55,19 +57,14 @@ def prepare_rankings(
         ranked["rating_std"] = ranked["rating_std"].fillna(0)
 
     naive = rank_naive(ranked)
-    bayesian = rank_bayesian(
+    bayesian, global_mean, confidence_threshold = rank_bayesian(
         ranked,
         interactions,
         min_votes=3,
         confidence_quantile=0.90,
     )
 
-    return (
-        naive,
-        bayesian,
-        float(bayesian.attrs["global_mean"]),
-        float(bayesian.attrs["confidence_threshold"]),
-    )
+    return naive, bayesian, global_mean, confidence_threshold
 
 
 def parse_tags(value: object) -> list[str]:
@@ -85,44 +82,34 @@ def parse_tags(value: object) -> list[str]:
     return []
 
 
-def display_columns(data: pd.DataFrame) -> pd.DataFrame:
-    """Select and label useful recipe columns present in a ranking."""
+def display_columns(data: pd.DataFrame, ranking_type: str) -> pd.DataFrame:
+    """Select and label the key columns for a ranking table."""
     result = data.copy()
-
-    if "tags" in result.columns:
-        result["tags"] = result["tags"].map(lambda value: ", ".join(parse_tags(value)))
-    elif "tags_list" in result.columns:
-        result["tags"] = result["tags_list"].map(
-            lambda value: ", ".join(parse_tags(value))
-        )
-
     labels = {
+        "Rank": "Rank",
         "name": "Recipe",
         "average_rating": "Average rating",
         "bayesian_score": "Bayesian score",
         "rating_count": "Ratings",
-        "minutes": "Preparation time (min)",
-        "n_steps": "Steps",
-        "n_ingredients": "Ingredients",
-        "tags": "Tags",
+        "minutes": "Time (min)",
     }
 
-    columns = [
-        column
-        for column in (
+    if ranking_type == "naive":
+        columns = ("Rank", "name", "average_rating", "rating_count")
+    elif ranking_type == "final":
+        columns = (
+            "Rank",
             "name",
-            "average_rating",
             "bayesian_score",
+            "average_rating",
             "rating_count",
             "minutes",
-            "n_steps",
-            "n_ingredients",
-            "tags",
         )
-        if column in result.columns
-    ]
+    else:
+        columns = ("Rank", "name", "bayesian_score", "rating_count")
 
-    return result.loc[:, columns].rename(columns=labels)
+    available = [column for column in columns if column in result.columns]
+    return result.loc[:, available].rename(columns=labels)
 
 
 def filter_recipes(
@@ -177,28 +164,39 @@ def render_ranking(
     ranking_type: str,
     top_n: int,
 ) -> None:
-    """Display a ranking table with a visible rank number."""
+    """Display a compact ranking table with a visible podium."""
     if data.empty:
         st.info("No recipes are available for this ranking.")
         return
 
     view = data.head(top_n).copy().reset_index(drop=True)
-    view.insert(0, "Rank", [f"#{index}" for index in range(1, len(view) + 1)])
-
-    if ranking_type == "naive" and "average_rating" in view.columns:
-        view["average_rating"] = view["average_rating"].map(
-            lambda value: f"{value:.2f}" if pd.notna(value) else "—"
-        )
-
-    if "bayesian_score" in view.columns:
-        view["bayesian_score"] = view["bayesian_score"].map(
-            lambda value: f"{value:.4f}" if pd.notna(value) else "—"
-        )
+    ranks = list(range(1, len(view) + 1))
+    view.insert(
+        0,
+        "Rank",
+        [f"{PODIUM_MEDALS.get(rank, '')} {rank}".strip() for rank in ranks],
+    )
 
     st.dataframe(
-        display_columns(view),
+        display_columns(view, ranking_type),
         hide_index=True,
         use_container_width=True,
+        column_config={
+            "Rank": st.column_config.TextColumn("Rank", width="small"),
+            "Recipe": st.column_config.TextColumn("Recipe", width="large"),
+            "Average rating": st.column_config.NumberColumn(
+                "Average rating", format="%.2f", width="small"
+            ),
+            "Bayesian score": st.column_config.NumberColumn(
+                "Bayesian score", format="%.4f", width="small"
+            ),
+            "Ratings": st.column_config.NumberColumn(
+                "Ratings", format="%d", width="small"
+            ),
+            "Time (min)": st.column_config.NumberColumn(
+                "Time (min)", format="%d", width="small"
+            ),
+        },
     )
 
 
@@ -220,6 +218,10 @@ def main() -> None:
         div[data-testid="stDataFrame"] {
             border-radius: 12px;
             overflow: hidden;
+            margin-bottom: 1rem;
+        }
+        div[data-testid="stVerticalBlock"] > div:has(> div > .section-break) {
+            margin-top: 1rem;
         }
         </style>
         """,
@@ -227,6 +229,7 @@ def main() -> None:
     )
 
     st.title("RateMyRecipe")
+    st.caption("Explore recipe ratings, compare ranking methods, and find your next dish.")
     st.markdown(
         "**On this page:** "
         "[Naive vs. Bayesian comparison](#ranking-comparison) · "
@@ -263,103 +266,75 @@ def main() -> None:
         st.stop()
 
     st.markdown("<span id='ranking-comparison'></span>", unsafe_allow_html=True)
-    st.header("1. Naive vs. Bayesian comparison")
-
+    st.header("⚖️ 1. Naive vs. Bayesian comparison")
     st.markdown(
         """
-        The **Naive ranking** sorts recipes by their average rating. A recipe
-        with only a few ratings can therefore rise to the top based on a small
-        sample.
-
-        The **Bayesian ranking** uses the recipe’s rating information together
-        with its number of ratings, according to the project’s ranking function.
-        This takes into account how much evidence supports each recipe’s rating
-        and makes the ranking less sensitive to very small samples.
+        **Naive** orders recipes by their average rating, so a highly rated recipe
+        with few reviews can rank near the top. **Bayesian** also considers how
+        much rating evidence supports each recipe, reducing sensitivity to very
+        small samples.
         """
     )
 
     st.subheader("Naive ranking")
-    st.caption(
-        "Recipes are ordered by average rating. The ratings column shows how "
-        "many ratings contribute to each recipe’s result."
-    )
+    st.caption("Ordered by average rating; ratings show the number of reviews.")
     render_ranking(naive, ranking_type="naive", top_n=top_n)
 
     st.subheader("Bayesian ranking")
+    st.caption("Ordered by the project’s Bayesian score.")
+    render_ranking(bayesian, ranking_type="bayesian", top_n=top_n)
     with st.expander("How to interpret the Bayesian ranking statistics"):
         st.markdown(
             f"""
-            - **Global mean rating ({global_mean:.3f})**: the overall rating
-              reference exposed by the Bayesian ranking function.
+            - **Global mean rating ({global_mean:.3f})**: overall rating reference.
             - **90th-percentile vote threshold ({confidence_threshold:.0f} ratings)**:
-              the confidence threshold exposed by that function, as configured
-              in the project.
-            - The ranking also applies a minimum of **3 ratings**
-              (`min_votes=3`).
+              confidence threshold configured for this ranking.
+            - The ranking also applies a minimum of **3 ratings** (`min_votes=3`).
             """
         )
 
-    st.caption(
-        "Recipes are ordered by the Bayesian score computed by the project. "
-        "The minimum-vote and confidence settings are controlled by the existing "
-        "ranking function."
-    )
-    render_ranking(bayesian, ranking_type="bayesian", top_n=top_n)
-
+    st.divider()
     st.markdown("<span id='rating-charts'></span>", unsafe_allow_html=True)
-    st.header("2. Rating charts")
+    st.header("📈 2. Rating charts")
+    st.caption("Use these charts to see how rating quality and review volume relate.")
 
-    st.subheader("Average rating and number of ratings")
-    st.markdown(
-        """
-        Each point represents a recipe. This chart compares its average rating
-        with the number of ratings behind it. It provides context for the naive
-        ranking: similar average ratings can be supported by very different
-        numbers of reviews. The chart complements the rankings; it does not
-        replace them.
-        """
-    )
     figure, _ = plot_rating_vs_review_count(naive)
+    figure.set_size_inches(12, 7, forward=True)
     render_chart(figure)
 
     st.subheader("Rating variability and number of ratings")
-    st.markdown(
-        """
-        This chart compares each recipe’s rating variability with its number of
-        ratings. Standard deviation describes how spread out the ratings are
-        around their average; it is not a measure of whether the average is high
-        or low. It can add context about reviewer agreement and the amount of
-        data supporting that estimate.
-        """
+    st.caption(
+        "Standard deviation shows how spread out ratings are, not whether the "
+        "average is high or low."
     )
     figure, _ = plot_rating_std_vs_review_count(naive)
+    figure.set_size_inches(12, 7, forward=True)
     render_chart(figure)
 
+    st.divider()
     st.markdown("<span id='final-ranking'></span>", unsafe_allow_html=True)
-    st.header("3. Final ranking")
-
-    st.markdown(
-        """
-        This definitive list uses the **Bayesian ranking only**. The time and
-        step limits are applied together. If you choose more than one category,
-        a recipe is included when it matches **at least one** selected category.
-        """
+    st.header("🏆 3. Final ranking")
+    st.caption(
+        "The final list uses the Bayesian ranking. Time and step limits apply "
+        "together; recipes matching at least one selected category are included."
     )
 
-    controls = st.columns([1, 1, 1.5])
+    controls = st.columns([1, 1, 1.5], gap="large", vertical_alignment="top")
 
     max_steps_value = controls[0].number_input(
-        "Maximum number of steps (0 = no limit)",
+        "Maximum number of steps",
         min_value=0,
         value=0,
         step=1,
+        help="Set to 0 for no limit.",
     )
 
     max_minutes_value = controls[1].number_input(
-        "Maximum preparation time in minutes (0 = no limit)",
+        "Maximum preparation time (minutes)",
         min_value=0,
         value=0,
         step=5,
+        help="Set to 0 for no limit.",
     )
 
     selected_categories = controls[2].multiselect(
@@ -378,19 +353,44 @@ def main() -> None:
     final_ranking = final_ranking.sort_values(
         "bayesian_score",
         ascending=False,
-    ).head(top_n)
+    ).head(top_n).reset_index(drop=True)
 
     if final_ranking.empty:
         st.warning("No recipes match the selected filters.")
     else:
-        final_table = display_columns(final_ranking)
+        final_ranking.insert(
+            0,
+            "Rank",
+            [
+                f"{PODIUM_MEDALS.get(rank, '')} {rank}".strip()
+                for rank in range(1, len(final_ranking) + 1)
+            ],
+        )
+        final_table = display_columns(final_ranking, ranking_type="final")
+        st.caption(f"Showing {len(final_table)} recipe(s) matching your filters.")
         st.dataframe(
             final_table,
             hide_index=True,
             use_container_width=True,
+            column_config={
+                "Rank": st.column_config.TextColumn("Rank", width="small"),
+                "Recipe": st.column_config.TextColumn("Recipe", width="large"),
+                "Bayesian score": st.column_config.NumberColumn(
+                    "Bayesian score", format="%.4f", width="small"
+                ),
+                "Average rating": st.column_config.NumberColumn(
+                    "Average rating", format="%.2f", width="small"
+                ),
+                "Ratings": st.column_config.NumberColumn(
+                    "Ratings", format="%d", width="small"
+                ),
+                "Time (min)": st.column_config.NumberColumn(
+                    "Time (min)", format="%d", width="small"
+                ),
+            },
         )
         st.download_button(
-            "Download filtered Bayesian ranking as CSV",
+            "Download ranking as CSV",
             data=final_table.to_csv(index=False).encode("utf-8-sig"),
             file_name="ratemyrecipe_bayesian_ranking.csv",
             mime="text/csv",

@@ -1,4 +1,4 @@
-# 🍳 RateMyRecipe
+# 🍲 RateMyRecipe
 
 RateMyRecipe explores how recipes can be ranked more fairly when recipes have very different numbers of ratings. It combines exploratory data analysis (EDA), rating metrics, a Bayesian ranking, and an interactive Streamlit app built around recipe and user-interaction data.
 
@@ -24,20 +24,20 @@ The naive ranking sorts recipes by their average positive rating, using rating c
 
 ### Bayesian ranking
 
-The Bayesian score pulls each recipe’s average toward the global mean rating. The amount of pull depends on the recipe’s rating count and the confidence threshold derived from the selected rating-count quantile:
+The Bayesian score pulls each recipe’s average toward the global mean rating. The amount of pull depends on the recipe’s positive-rating count and on a smoothing weight (`m`):
 
 ```text
 Bayesian score = (v × R + m × C) / (v + m)
 ```
 
-- `R` is the recipe’s average rating.
-- `v` is the number of valid positive ratings for the recipe.
+- `R` is the recipe’s average positive rating.
+- `v` is the number of positive ratings for the recipe.
 - `C` is the global mean of positive ratings.
-- `m` is the confidence threshold, calculated from the 90th percentile of recipe rating counts in the app.
+- `m` is the confidence threshold, calculated as the selected quantile (90th percentile by default) of recipe positive-rating counts.
 
-The app uses a minimum of **3 ratings** for the Bayesian ranking. With fewer ratings, a recipe can have a high raw average by chance; the Bayesian adjustment balances that average with the overall rating baseline. As the recipe receives more ratings, its own average has more influence on its Bayesian score.
+Here, “confidence threshold” does **not** mean the minimum number of ratings required for a recipe to enter the ranking. It sets the strength of the smoothing: mathematically, the score is a weighted average of `R` and `C`, with weights `v` and `m`. A larger `m` gives the global mean more influence; as `v` grows relative to `m`, the recipe’s own average has more influence and the score moves closer to `R`. When `v` is small, the score is pulled more strongly toward `C`.
 
-The formula and settings are implemented in [`reciperank/analysis.py`](reciperank/analysis.py). The app displays the global mean and confidence threshold used for the loaded data, so these values depend on the dataset.
+Eligibility is controlled separately by `min_votes`, which defaults to **3**: recipes with fewer than 3 positive ratings are excluded from the Bayesian ranking. The 90th percentile determines `m`; it is not that eligibility cutoff. Both the percentile setting and minimum-rating setting are parameters in `rank_bayesian` in [`reciperank/analysis.py`](reciperank/analysis.py). The app displays the global mean and confidence threshold calculated for the loaded data, so their values depend on the dataset.
 
 ## Data and EDA
 
@@ -48,7 +48,9 @@ The app expects two CSV files in the `data/` directory:
 
 The data loader in [`reciperank/data.py`](reciperank/data.py) reads and cleans these files. It keeps interactions linked to known recipe IDs, fills missing review text with an empty string, repairs one recipe record identified during data inspection, and treats non-positive or specifically identified incorrect preparation times as missing.
 
-Rating metrics in [`reciperank/analysis.py`](reciperank/analysis.py) are calculated from positive ratings; zero ratings are excluded from rating averages and dispersion statistics. Interaction counts include all interactions, including zero-rating interactions. The EDA notebook, [`notebooks/ratemyrecipe_eda.ipynb`](notebooks/ratemyrecipe_eda.ipynb), documents the exploratory analysis that informed the data-cleaning and ranking work.
+Rating metrics in [`reciperank/analysis.py`](reciperank/analysis.py) are calculated from positive ratings; zero ratings are excluded from rating averages and dispersion statistics. Interaction counts include all interactions, including zero-rating interactions. The EDA notebook, [`reciperank/notebooks/ratemyrecipe_eda.ipynb`](reciperank/notebooks/ratemyrecipe_eda.ipynb), documents the exploratory analysis that informed the data-cleaning and ranking work.
+
+The CSVs are tracked with Git LFS. When cloning the repository, install Git LFS and fetch the files if they are LFS pointers rather than usable CSV data. The app and notebook need the actual CSV contents.
 
 ## Libraries
 
@@ -59,38 +61,45 @@ Rating metrics in [`reciperank/analysis.py`](reciperank/analysis.py) are calcula
 | `matplotlib` | Creating rating charts |
 | `seaborn` | Building the scatter plots |
 | `streamlit` | The interactive web app |
+| `TextBlob` | Sentiment analysis in the EDA notebook |
+| `Jupyter` | Running the EDA notebook interactively |
 
-Exact versions are listed in [`requirements.txt`](requirements.txt). 
+The app dependencies are listed in [`requirements.txt`](requirements.txt). At present, that file includes Streamlit and the libraries used by the app, but not `textblob` or Jupyter. Install the latter separately to run the notebook, or add them to `requirements.txt` if you want one environment for both workflows.
 
 ## Setup
 
 1. Clone the repository and enter the project folder:
 
    ```bash
-   git clone <repository-url>
-   cd RateMyRecipe
+   git clone https://github.com/giacomocipriani/RecipeRank.git
+   cd RecipeRank
    ```
 
-   Replace `<repository-url>` with the URL of your repository.
+2. If needed, install Git LFS and fetch the dataset files so that `data/RAW_recipes.csv` and `data/RAW_interactions.csv` contain CSV data rather than LFS pointer text.
 
-2. Create and activate a virtual environment:
+3. Create and activate a virtual environment:
 
    ```bash
    python -m venv .venv
    source .venv/bin/activate        # macOS / Linux
-   # Windows: .venv\Scripts\activate
+   # Windows: .venv\\Scripts\\activate
    ```
 
-3. Install the dependencies:
+4. Install the project dependencies:
 
    ```bash
-   pip install -r requirements.txt
-   pip install streamlit
+   python -m pip install -r requirements.txt
    ```
 
-4. Place `RAW_recipes.csv` and `RAW_interactions.csv` in the `data/` directory. Both files are required by the app.
+5. To run the EDA notebook, install its additional tools in the same environment:
 
-## Run the app
+   ```bash
+   python -m pip install textblob jupyter
+   ```
+
+   Alternatively, add `textblob` and `jupyter` to `requirements.txt` and install all dependencies once. These notebook-only packages are not required to run the Streamlit app.
+
+## Run the Streamlit app
 
 From the project root, start Streamlit:
 
@@ -98,34 +107,34 @@ From the project root, start Streamlit:
 streamlit run app.py
 ```
 
-The app loads and analyzes the CSV files from `data/`. To use a different folder, open **Advanced data settings** in the sidebar and enter a folder containing both required CSV files.
+The app loads and analyzes the CSV files from `data/`. To use a different folder, open **Advanced data settings** in the sidebar and enter a folder containing both required CSV files. Streamlit is already installed by `pip install -r requirements.txt`; there is no need to install it a second time.
 
 ## Explore the EDA notebook
 
-The EDA notebook is [`notebooks/ratemyrecipe_eda.ipynb`](notebooks/ratemyrecipe_eda.ipynb). From the project root, start Jupyter and open the notebook:
+The notebook is [`reciperank/notebooks/ratemyrecipe_eda.ipynb`](reciperank/notebooks/ratemyrecipe_eda.ipynb). From the project root, start Jupyter:
 
 ```bash
 jupyter notebook
 ```
 
-The notebook is for exploratory analysis; the Streamlit app uses the reusable loading, cleaning, metrics, ranking, and plotting functions in the `reciperank` package.
+Then open `reciperank/notebooks/ratemyrecipe_eda.ipynb` in the browser. Alternatively, change the Jupyter server’s working directory to `reciperank/notebooks` and open `ratemyrecipe_eda.ipynb` there. The notebook reads the data through relative paths such as `../data/...`; those paths resolve correctly when its working directory is the notebook’s own folder. If launching the notebook from a different working directory, set the working directory to `reciperank/notebooks` first. The notebook imports TextBlob, so make sure the notebook dependencies from the setup section are installed in the environment used by its Jupyter kernel. The notebook is for exploratory analysis; the Streamlit app uses the reusable loading, cleaning, metrics, ranking, and plotting functions in the `reciperank` package.
 
 ## Project structure
 
 ```text
-RateMyRecipe/
+RecipeRank/
 ├── app.py                         # Streamlit entry point and interactive ranking views
 ├── reciperank/
 │   ├── __init__.py                # Package initialization
 │   ├── analysis.py                # Rating metrics and naive/Bayesian rankings
 │   ├── data.py                    # CSV loading and data cleaning
-│   └── plots.py                   # Rating and variability charts
+│   ├── plots.py                   # Rating and variability charts
+│   └── notebooks/
+│       └── ratemyrecipe_eda.ipynb # Exploratory data analysis
 ├── data/
 │   ├── RAW_interactions.csv       # Recipe-rating interactions (required at runtime)
 │   └── RAW_recipes.csv            # Recipe details (required at runtime)
-├── notebooks/
-│   └── ratemyrecipe_eda.ipynb     # Exploratory data analysis
-├── requirements.txt               # Python package requirements
+├── requirements.txt               # App Python package requirements
 └── README.md
 ```
 

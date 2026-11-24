@@ -136,7 +136,7 @@ def rank_bayesian(
     valid_votes: pd.DataFrame,
     min_votes: int = 3,
     confidence_quantile: float = 0.90,
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, float, float]:
     """Rank recipes using a Bayesian weighted average."""
     required_recipe_columns = {"average_rating", "rating_count"}
     missing_recipe_columns = required_recipe_columns.difference(ranked_recipes.columns)
@@ -172,19 +172,13 @@ def rank_bayesian(
         + confidence_threshold * global_mean
     ) / (result["rating_count"] + confidence_threshold)
 
-    # Store the parameters used to calculate the ranking.
-    result.attrs["global_mean"] = global_mean
-    result.attrs["confidence_threshold"] = confidence_threshold
-    result.attrs["confidence_quantile"] = confidence_quantile
-    result.attrs["min_votes"] = min_votes
-
     # Sort recipes by Bayesian score in descending order.
     result = result.sort_values(
         by="bayesian_score",
         ascending=False,
     )
 
-    return result
+    return result, global_mean, confidence_threshold
 
 
 def rank_by_time(
