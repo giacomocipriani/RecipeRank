@@ -41,7 +41,7 @@ Eligibility is controlled separately by `min_votes`, which defaults to **3**: re
 
 ## Data and EDA
 
-The app expects two CSV files in the `data/` directory:
+The app requires both CSV files in the `data/` directory:
 
 - `RAW_recipes.csv` — recipe details, including recipe IDs, names, preparation time, steps, ingredients, and tags.
 - `RAW_interactions.csv` — recipe-rating interactions, including recipe IDs and ratings.
@@ -50,7 +50,7 @@ The data loader in [`reciperank/data.py`](reciperank/data.py) reads and cleans t
 
 Rating metrics in [`reciperank/analysis.py`](reciperank/analysis.py) are calculated from positive ratings; zero ratings are excluded from rating averages and dispersion statistics. Interaction counts include all interactions, including zero-rating interactions. The EDA notebook, [`reciperank/notebooks/ratemyrecipe_eda.ipynb`](reciperank/notebooks/ratemyrecipe_eda.ipynb), documents the exploratory analysis that informed the data-cleaning and ranking work.
 
-The CSVs are tracked with Git LFS. When cloning the repository, install Git LFS and fetch the files if they are LFS pointers rather than usable CSV data. The app and notebook need the actual CSV contents.
+The dataset CSVs are excluded from Git and are not included in new commits after they are removed from Git tracking. They are still required locally for the app and notebook: keep or place both actual CSV files in `data/`. Anyone cloning the repository must obtain the datasets separately; this repository does not specify a download URL or method.
 
 ## Libraries
 
@@ -75,7 +75,7 @@ The app dependencies are listed in [`requirements.txt`](requirements.txt). At pr
    cd RecipeRank
    ```
 
-2. If needed, install Git LFS and fetch the dataset files so that `data/RAW_recipes.csv` and `data/RAW_interactions.csv` contain CSV data rather than LFS pointer text.
+2. Obtain the dataset files separately and place the actual CSV files at `data/RAW_recipes.csv` and `data/RAW_interactions.csv`. Both are required to run the app and notebook.
 
 3. Create and activate a virtual environment:
 
@@ -132,8 +132,8 @@ RecipeRank/
 │   └── notebooks/
 │       └── ratemyrecipe_eda.ipynb # Exploratory data analysis
 ├── data/
-│   ├── RAW_interactions.csv       # Recipe-rating interactions (required at runtime)
-│   └── RAW_recipes.csv            # Recipe details (required at runtime)
+│   ├── RAW_interactions.csv       # Recipe-rating interactions (required at runtime; obtain separately)
+│   └── RAW_recipes.csv            # Recipe details (required at runtime; obtain separately)
 ├── requirements.txt               # App Python package requirements
 └── README.md
 ```
