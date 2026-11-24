@@ -50,7 +50,7 @@ The data loader in [`reciperank/data.py`](reciperank/data.py) reads and cleans t
 
 Rating metrics in [`reciperank/analysis.py`](reciperank/analysis.py) are calculated from positive ratings; zero ratings are excluded from rating averages and dispersion statistics. Interaction counts include all interactions, including zero-rating interactions. The EDA notebook, [`reciperank/notebooks/ratemyrecipe_eda.ipynb`](reciperank/notebooks/ratemyrecipe_eda.ipynb), documents the exploratory analysis that informed the data-cleaning and ranking work.
 
-The dataset CSVs are excluded from Git and are not included in new commits after they are removed from Git tracking. They are still required locally for the app and notebook: keep or place both actual CSV files in `data/`. Anyone cloning the repository must obtain the datasets separately; this repository does not specify a download URL or method.
+The dataset CSVs are excluded from Git and are not included in new commits after they are removed from Git tracking. They are still required locally for the app and notebook: keep or place both actual CSV files in `data/`. Anyone cloning the repository can download the datasets from [Kaggle](https://www.kaggle.com/datasets/shuyangli94/food-com-recipes-and-user-interactions).
 
 ## Libraries
 
@@ -75,7 +75,7 @@ The app dependencies are listed in [`requirements.txt`](requirements.txt). At pr
    cd RecipeRank
    ```
 
-2. Obtain the dataset files separately and place the actual CSV files at `data/RAW_recipes.csv` and `data/RAW_interactions.csv`. Both are required to run the app and notebook.
+2. Download the datasets from [Kaggle](https://www.kaggle.com/datasets/shuyangli94/food-com-recipes-and-user-interactions) and place the actual CSV files at `data/RAW_recipes.csv` and `data/RAW_interactions.csv`. Both are required to run the app and notebook.
 
 3. Create and activate a virtual environment:
 

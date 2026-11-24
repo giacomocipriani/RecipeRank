@@ -52,10 +52,6 @@ def prepare_rankings(
     metrics = calculate_recipe_metrics(recipes, interactions)
     ranked = merge_recipe_metrics(recipes, metrics)
 
-    # Recipes with one valid rating have an undefined standard deviation.
-    if "rating_std" in ranked.columns:
-        ranked["rating_std"] = ranked["rating_std"].fillna(0)
-
     naive = rank_naive(ranked)
     bayesian, global_mean, confidence_threshold = rank_bayesian(
         ranked,
@@ -304,8 +300,9 @@ def main() -> None:
 
     st.subheader("Rating variability and number of ratings")
     st.caption(
-        "Standard deviation shows how spread out ratings are, not whether the "
-        "average is high or low."
+        "La deviazione standard misura la dispersione, non il livello medio. "
+        "Per una sola valutazione positiva non è definita e la ricetta non è "
+        "mostrata in questo grafico; i conteggi oltre 100 non sono visualizzati."
     )
     figure, _ = plot_rating_std_vs_review_count(naive)
     figure.set_size_inches(12, 7, forward=True)

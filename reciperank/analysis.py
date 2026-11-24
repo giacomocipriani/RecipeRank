@@ -268,24 +268,26 @@ def rank_by_tag(
         raise ValueError(f"Required tag-ranking columns missing: {missing}")
 
     # Parse string-encoded tag lists when needed.
-    def parse_tag_list(value: object) -> list:
+    def parse_tag_list(value: object) -> list[str]:
         if isinstance(value, list):
-            return value
+            return [str(item).strip().casefold() for item in value]
 
         if isinstance(value, str):
             try:
                 parsed = ast.literal_eval(value)
             except (ValueError, SyntaxError):
                 return []
-            return parsed if isinstance(parsed, list) else []
+            if isinstance(parsed, list):
+                return [str(item).strip().casefold() for item in parsed]
 
         return []
 
+    normalized_tag = tag.strip().casefold()
     tags = bayesian_recipes["tags_list"].map(parse_tag_list)
 
-    # Keep recipes whose tag list contains the selected tag.
+    # Keep recipes whose normalized tag list contains the selected tag.
     result = bayesian_recipes.loc[
-        tags.map(lambda recipe_tags: tag in recipe_tags)
+        tags.map(lambda recipe_tags: normalized_tag in recipe_tags)
     ].copy()
 
     # Return the highest Bayesian scores and relevant rating details.
