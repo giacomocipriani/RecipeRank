@@ -22,7 +22,7 @@ def _set_rating_count_axis(axes: plt.Axes) -> None:
     """Set and label the rating-count range shown in the charts."""
     axes.set_xlim(*RATING_COUNT_XLIM)
     axes.set_xticks(RATING_COUNT_XTICKS)
-    axes.set_xlabel("Numero di valutazioni (visualizzate fino a 100)", fontsize=12)
+    axes.set_xlabel("Number of ratings (shown up to 100)", fontsize=12)
 
 
 def plot_rating_vs_review_count(
@@ -42,11 +42,11 @@ def plot_rating_vs_review_count(
     )
 
     axes.set_title(
-        "Valutazione media e numero di valutazioni: dettaglio fino a 100",
+        "Average rating vs. number of ratings (up to 100)",
         fontsize=14,
     )
     _set_rating_count_axis(axes)
-    axes.set_ylabel("Valutazione media", fontsize=12)
+    axes.set_ylabel("Average rating", fontsize=12)
     axes.set_ylim(0.5, 5.5)
     axes.grid(True, linestyle="--", alpha=0.5)
 
@@ -74,17 +74,17 @@ def plot_rating_std_vs_review_count(
     )
 
     axes.set_title(
-        "Dispersione delle valutazioni per volume: dettaglio fino a 100",
+        "Rating variability vs. number of ratings (up to 100)",
         fontsize=14,
     )
     _set_rating_count_axis(axes)
-    axes.set_ylabel("Deviazione standard campionaria", fontsize=12)
+    axes.set_ylabel("Sample standard deviation", fontsize=12)
     axes.grid(True, linestyle="--", alpha=0.5)
     if plot_data.empty:
         axes.text(
             0.5,
             0.5,
-            "Nessuna ricetta con deviazione standard definita",
+            "No recipes with a defined standard deviation",
             ha="center",
             va="center",
             transform=axes.transAxes,
@@ -93,7 +93,7 @@ def plot_rating_std_vs_review_count(
         axes.text(
             0.01,
             0.99,
-            "Ricette con una sola valutazione positiva: deviazione non definita, non mostrate.",
+            "Recipes with only one positive rating have no defined standard deviation and are omitted.",
             ha="left",
             va="top",
             transform=axes.transAxes,

@@ -88,6 +88,7 @@ def display_columns(data: pd.DataFrame, ranking_type: str) -> pd.DataFrame:
         "bayesian_score": "Bayesian score",
         "rating_count": "Ratings",
         "minutes": "Time (min)",
+        "n_steps": "Steps",
     }
 
     if ranking_type == "naive":
@@ -100,6 +101,7 @@ def display_columns(data: pd.DataFrame, ranking_type: str) -> pd.DataFrame:
             "average_rating",
             "rating_count",
             "minutes",
+            "n_steps",
         )
     else:
         columns = ("Rank", "name", "bayesian_score", "rating_count")
@@ -192,6 +194,9 @@ def render_ranking(
             "Time (min)": st.column_config.NumberColumn(
                 "Time (min)", format="%d", width="small"
             ),
+            "Steps": st.column_config.NumberColumn(
+                "Steps", format="%d", width="small"
+            ),
         },
     )
 
@@ -240,6 +245,12 @@ def main() -> None:
             options=[5, 10],
             horizontal=True,
         )
+        naive_max_ratings = st.radio(
+            "Maximum ratings per recipe in naive ranking",
+            options=[1, 5, "No limit"],
+            horizontal=True,
+            format_func=lambda value: str(value),
+        )
 
         with st.expander("Advanced data settings"):
             data_dir = st.text_input(
@@ -273,7 +284,9 @@ def main() -> None:
     )
 
     st.subheader("Naive ranking")
-    st.caption("Ordered by average rating; ratings show the number of reviews.")
+    st.caption("Ordered by average rating; the selector filters recipes by rating count.")
+    if naive_max_ratings != "No limit":
+        naive = naive.loc[naive["rating_count"] <= int(naive_max_ratings)]
     render_ranking(naive, ranking_type="naive", top_n=top_n)
 
     st.subheader("Bayesian ranking")
@@ -300,9 +313,9 @@ def main() -> None:
 
     st.subheader("Rating variability and number of ratings")
     st.caption(
-        "La deviazione standard misura la dispersione, non il livello medio. "
-        "Per una sola valutazione positiva non è definita e la ricetta non è "
-        "mostrata in questo grafico; i conteggi oltre 100 non sono visualizzati."
+        "Sample standard deviation measures spread, not the average rating. "
+        "Recipes with only one positive rating have no defined standard deviation "
+        "and are omitted; counts above 100 are not shown."
     )
     figure, _ = plot_rating_std_vs_review_count(naive)
     figure.set_size_inches(12, 7, forward=True)
@@ -383,6 +396,9 @@ def main() -> None:
                 ),
                 "Time (min)": st.column_config.NumberColumn(
                     "Time (min)", format="%d", width="small"
+                ),
+                "Steps": st.column_config.NumberColumn(
+                    "Steps", format="%d", width="small"
                 ),
             },
         )
