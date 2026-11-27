@@ -57,14 +57,14 @@ The dataset CSVs are excluded from Git and are not included in new commits after
 | Library | Used for |
 |---------|----------|
 | `pandas` | Loading, cleaning, joining, and analyzing the CSV data |
-| `numpy` | Numerical operations used by the analysis |
+| `numpy` | Numerical operations used by the EDA notebook |
 | `matplotlib` | Creating rating charts |
 | `seaborn` | Building the scatter plots |
 | `streamlit` | The interactive web app |
 | `TextBlob` | Sentiment analysis in the EDA notebook |
 | `Jupyter` | Running the EDA notebook interactively |
 
-The app dependencies are listed in [`requirements.txt`](requirements.txt). 
+The dependencies for the app and EDA notebook are listed in [`requirements.txt`](requirements.txt).
 
 ## Setup
 
@@ -82,7 +82,7 @@ The app dependencies are listed in [`requirements.txt`](requirements.txt).
    ```bash
    python -m venv .venv
    source .venv/bin/activate        # macOS / Linux
-   # Windows: .venv\\Scripts\\activate
+   # PowerShell: .\.venv\Scripts\Activate.ps1
    ```
 
 4. Install the project dependencies:
@@ -90,14 +90,6 @@ The app dependencies are listed in [`requirements.txt`](requirements.txt).
    ```bash
    python -m pip install -r requirements.txt
    ```
-
-5. To run the EDA notebook, install its additional tools in the same environment:
-
-   ```bash
-   python -m pip install textblob jupyter
-   ```
-
-   Alternatively, add `textblob` and `jupyter` to `requirements.txt` and install all dependencies once. These notebook-only packages are not required to run the Streamlit app.
 
 ## Run the Streamlit app
 
@@ -117,7 +109,7 @@ The notebook is [`reciperank/notebooks/ratemyrecipe_eda.ipynb`](reciperank/noteb
 jupyter notebook
 ```
 
-Then open `reciperank/notebooks/ratemyrecipe_eda.ipynb` in the browser. Alternatively, change the Jupyter server’s working directory to `reciperank/notebooks` and open `ratemyrecipe_eda.ipynb` there. The notebook reads the data through relative paths such as `../data/...`; those paths resolve correctly when its working directory is the notebook’s own folder. If launching the notebook from a different working directory, set the working directory to `reciperank/notebooks` first. The notebook imports TextBlob, so make sure the notebook dependencies from the setup section are installed in the environment used by its Jupyter kernel. The notebook is for exploratory analysis; the Streamlit app uses the reusable loading, cleaning, metrics, ranking, and plotting functions in the `reciperank` package.
+Then open `reciperank/notebooks/ratemyrecipe_eda.ipynb` in the browser. Alternatively, change the Jupyter server’s working directory to `reciperank/notebooks` and open `ratemyrecipe_eda.ipynb` there. The notebook reads the data through relative paths such as `../data/...`; those paths resolve correctly when its working directory is the notebook’s own folder. If launching the notebook from a different working directory, set the working directory to `reciperank/notebooks` first. The notebook imports TextBlob. Make sure the Jupyter kernel uses the same Python environment where `requirements.txt` was installed. The notebook is for exploratory analysis; the Streamlit app uses the reusable loading, cleaning, metrics, ranking, and plotting functions in the `reciperank` package.
 
 ## Project structure
 
@@ -134,7 +126,7 @@ RecipeRank/
 ├── data/
 │   ├── RAW_interactions.csv       # Recipe-rating interactions (required at runtime; obtain separately)
 │   └── RAW_recipes.csv            # Recipe details (required at runtime; obtain separately)
-├── requirements.txt               # App Python package requirements
+├── requirements.txt               # App and EDA Python package requirements
 └── README.md
 ```
 
