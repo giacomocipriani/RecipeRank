@@ -48,7 +48,7 @@ The app requires both CSV files in the `data/` directory:
 
 The data loader in [`reciperank/data.py`](reciperank/data.py) reads and cleans these files. It keeps interactions linked to known recipe IDs, fills missing review text with an empty string, repairs one recipe record identified during data inspection, and treats non-positive or specifically identified incorrect preparation times as missing.
 
-Rating metrics in [`reciperank/analysis.py`](reciperank/analysis.py) are calculated from positive ratings; zero ratings are excluded from rating averages and dispersion statistics. Interaction counts include all interactions, including zero-rating interactions. The EDA notebook, [`reciperank/notebooks/ratemyrecipe_eda.ipynb`](reciperank/notebooks/ratemyrecipe_eda.ipynb), documents the exploratory analysis that informed the data-cleaning and ranking work.
+Rating metrics in [`reciperank/analysis.py`](reciperank/analysis.py) are calculated from positive ratings; zero ratings are excluded from rating averages and dispersion statistics. Interaction counts include all interactions, including zero-rating interactions. The EDA notebook, [`ratemyrecipe_eda.ipynb`](ratemyrecipe_eda.ipynb), documents the exploratory analysis that informed the data-cleaning and ranking work.
 
 The dataset CSVs are excluded from Git and are not included in new commits after they are removed from Git tracking. They are still required locally for the app and notebook: keep or place both actual CSV files in `data/`. Anyone cloning the repository can download the datasets from [Kaggle](https://www.kaggle.com/datasets/shuyangli94/food-com-recipes-and-user-interactions).
 
@@ -103,13 +103,13 @@ The app loads and analyzes the CSV files from `data/`. To use a different folder
 
 ## Explore the EDA notebook
 
-The notebook is [`reciperank/notebooks/ratemyrecipe_eda.ipynb`](reciperank/notebooks/ratemyrecipe_eda.ipynb). From the project root, start Jupyter:
+The notebook is [`ratemyrecipe_eda.ipynb`](ratemyrecipe_eda.ipynb). From the project root, start Jupyter:
 
 ```bash
 jupyter notebook
 ```
 
-Then open `reciperank/notebooks/ratemyrecipe_eda.ipynb` in the browser. Alternatively, change the Jupyter server’s working directory to `reciperank/notebooks` and open `ratemyrecipe_eda.ipynb` there. The notebook reads the data through relative paths such as `../data/...`; those paths resolve correctly when its working directory is the notebook’s own folder. If launching the notebook from a different working directory, set the working directory to `reciperank/notebooks` first. The notebook imports TextBlob. Make sure the Jupyter kernel uses the same Python environment where `requirements.txt` was installed. The notebook is for exploratory analysis; the Streamlit app uses the reusable loading, cleaning, metrics, ranking, and plotting functions in the `reciperank` package.
+Then open `ratemyrecipe_eda.ipynb` in the browser. The notebook reads the data through relative paths such as `data/...`, which resolve from the project root. The notebook imports TextBlob. Make sure the Jupyter kernel uses the same Python environment where `requirements.txt` was installed. The notebook is for exploratory analysis; the Streamlit app uses the reusable loading, cleaning, metrics, ranking, and plotting functions in the `reciperank` package.
 
 ## Project structure
 
@@ -120,9 +120,8 @@ RecipeRank/
 │   ├── __init__.py                # Package initialization
 │   ├── analysis.py                # Rating metrics and naive/Bayesian rankings
 │   ├── data.py                    # CSV loading and data cleaning
-│   ├── plots.py                   # Rating and variability charts
-│   └── notebooks/
-│       └── ratemyrecipe_eda.ipynb # Exploratory data analysis
+│   └── plots.py                   # Rating and variability charts
+├── ratemyrecipe_eda.ipynb         # Exploratory data analysis
 ├── data/
 │   ├── RAW_interactions.csv       # Recipe-rating interactions (required at runtime; obtain separately)
 │   └── RAW_recipes.csv            # Recipe details (required at runtime; obtain separately)
