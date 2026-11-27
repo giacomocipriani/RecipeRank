@@ -46,7 +46,7 @@ PODIUM_MEDALS = {1: "🥇", 2: "🥈", 3: "🥉"}
 @st.cache_data(show_spinner="Loading and analyzing the CSV files…")
 def prepare_rankings(
     data_dir: str,
-) -> tuple[pd.DataFrame, pd.DataFrame, float, float]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, float, float]:
     """Load, clean and rank recipes from the selected data directory."""
     recipes, interactions = load_and_clean_data(data_dir)
     metrics = calculate_recipe_metrics(recipes, interactions)
@@ -60,7 +60,7 @@ def prepare_rankings(
         confidence_quantile=0.90,
     )
 
-    return naive, bayesian, global_mean, confidence_threshold
+    return ranked, naive, bayesian, global_mean, confidence_threshold
 
 
 def parse_tags(value: object) -> list[str]:
@@ -260,7 +260,7 @@ def main() -> None:
             )
 
     try:
-        naive, bayesian, global_mean, confidence_threshold = prepare_rankings(data_dir)
+        ranked, naive, bayesian, global_mean, confidence_threshold = prepare_rankings(data_dir)
     except FileNotFoundError as error:
         st.error(f"Could not find the CSV files. {error}")
         st.info(
@@ -271,6 +271,8 @@ def main() -> None:
     except (ValueError, KeyError) as error:
         st.error(f"Could not prepare the rankings: {error}")
         st.stop()
+
+    chart_data = ranked.copy()
 
     st.markdown("<span id='ranking-comparison'></span>", unsafe_allow_html=True)
     st.header("⚖️ 1. Naive vs. Bayesian comparison")
@@ -307,7 +309,7 @@ def main() -> None:
     st.header("📈 2. Rating charts")
     st.caption("Use these charts to see how rating quality and review volume relate.")
 
-    figure, _ = plot_rating_vs_review_count(naive)
+    figure, _ = plot_rating_vs_review_count(chart_data)
     figure.set_size_inches(12, 7, forward=True)
     render_chart(figure)
 
@@ -317,7 +319,7 @@ def main() -> None:
         "Recipes with only one positive rating have no defined standard deviation "
         "and are omitted; counts above 100 are not shown."
     )
-    figure, _ = plot_rating_std_vs_review_count(naive)
+    figure, _ = plot_rating_std_vs_review_count(chart_data)
     figure.set_size_inches(12, 7, forward=True)
     render_chart(figure)
 
